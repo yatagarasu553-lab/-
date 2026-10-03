@@ -19,11 +19,40 @@
  .print-receipts{display:block;page-break-before:always;width:190mm;margin:0 auto}.print-receipts h2{text-align:center}.print-receipts img{display:block;max-width:180mm;max-height:245mm;margin:8mm auto;page-break-after:always;object-fit:contain}
  @page{size:A4 portrait;margin:7mm 10mm}
 }
+
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.mode-tab{border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:800;background:#e9eef5;color:#42536b}
+.mode-tab.active{background:#173f73;color:#fff}
+.print-transport{display:none}
+@media print{
+body.transport-print .print-sheet,body.transport-print .print-receipts{display:none!important}
+body.transport-print .print-transport{display:block!important;width:190mm;margin:0 auto;color:#000;font-family:"Yu Gothic",Meiryo,sans-serif}
+.t-title{text-align:center;font-size:20pt;font-weight:700;height:9mm}
+.t-status table,.t-person,.t-approval,.t-table,.t-sub,.t-grand{border-collapse:collapse;table-layout:fixed;width:100%}
+.t-status{width:47mm;height:7mm}
+.t-status td,.t-person td,.t-approval th,.t-approval td,.t-table th,.t-table td,.t-sub td,.t-grand td{border:1px solid #000}
+.t-status td{text-align:center;font-size:9pt}
+.t-date{text-align:right;font-size:12pt;font-weight:700;height:7mm}
+.t-top{display:grid;grid-template-columns:47.8% 5.8% 46.4%;height:24mm}
+.t-person .label{width:32%;text-align:center;font-weight:700}.t-person .value{padding-left:1mm}
+.t-approval th{text-align:center;height:8mm}.t-approval td{height:16mm}
+.t-gap{height:7mm}
+.t-table th{text-align:center;height:10mm;font-size:9pt}.t-table td{text-align:center;height:5.2mm;font-size:7.5pt;padding:.2mm}
+.t-table col:nth-child(1){width:9%}.t-table col:nth-child(2),.t-table col:nth-child(3){width:14%}.t-table col:nth-child(4){width:11%}.t-table col:nth-child(5){width:12%}.t-table col:nth-child(6){width:18%}.t-table col:nth-child(7){width:22%}
+.t-sub td,.t-grand td{height:7mm;text-align:center;font-size:9pt}.t-sub .label,.t-grand .label{font-weight:700}
+@page{size:A4 portrait;margin:7mm 10mm}
+}
 </style></head><body>
-<div class="app"><div class="hero"><h1>経費申請アプリ</h1><p>スマホ入力・自動保存・履歴・領収書・A4 PDF</p></div><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
+<div class="app"><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">経費明細</div><div id="expenses"></div><button class="btn add" onclick="addExpense()">＋ 経費を追加</button><div class="total"><span>合計</span><span id="total">¥0</span></div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">領収書</div><div class="receipt-input"><input id="receiptInput" type="file" accept="image/*" capture="environment" multiple><div class="hint">カメラ撮影または写真ライブラリから追加できます。PDF出力時は申請書の後ろに領収書ページとして付きます。</div></div><div id="receiptList" class="receipt-list"></div></div>
 <div class="card"><button class="btn pdf" onclick="makePDF()">A4 PDFを作成</button><button class="btn secondary" onclick="saveHistory()">申請履歴に保存</button><button class="btn danger" onclick="newForm()">新しい申請を作る</button><p class="hint">iPhone：A4 PDFを作成 → 印刷画面のプレビューを2本指で拡大 → 共有 →「ファイルに保存」。</p></div><div class="card"><div style="font-weight:900;font-size:18px">申請履歴</div><div id="history"></div></div><div class="card"><div style="font-weight:900;font-size:18px">iPhoneでアプリ風に使う</div><p class="hint">Safariでこのページを開き、共有ボタン →「ホーム画面に追加」。次回からホーム画面のアイコンから開けます。</p></div></div>
+<div id="transportSection" style="display:none">
+<div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="tApplyDate" type="date"></div><div class="field"><label>会社名</label><input id="tCompany" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="tDept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="tName" placeholder="例：菅原 光弥"></div></div><div id="tSaveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
+<div class="card"><div style="font-weight:900;font-size:18px">交通費明細</div><div id="tExpenses"></div><button class="btn add" onclick="addTransport()">＋ 交通費を追加</button><div class="total"><span>合計</span><span id="tTotal">¥0</span></div></div>
+<div class="card"><button class="btn pdf" onclick="makeTransportPDF()">A4 PDFを作成</button><button class="btn secondary" onclick="saveTransportHistory()">申請履歴に保存</button><button class="btn danger" onclick="newTransport()">新しい申請を作る</button></div>
+<div class="card"><div style="font-weight:900;font-size:18px">交通費申請履歴</div><div id="tHistory"></div></div>
+</div></div>
 <div class="print-sheet">
  <div class="excel-title">経費立替明細書（兼出金票）</div>
  <div class="excel-blank1"></div>
@@ -39,7 +68,7 @@
  <div class="excel-total"><div>合　　　計</div><div class="total-value" id="pTotal"></div></div>
  <div class="excel-receipt-row"><div class="receipt-box"><div>受領印</div><div></div></div></div>
 </div>
-<div class="print-receipts" id="printReceipts"><h2>領収書添付</h2><div id="pReceiptImages"></div></div>
+<div class="print-transport"><div class="t-title">交通費立替明細書</div><div style="height:6mm"></div><div class="t-status"><table><tr><td>申請</td><td>済</td><td>未</td></tr></table></div><div class="t-date"><span id="tpYear"></span> 年　<span id="tpMonth"></span>月　<span id="tpDay"></span>日</div><div class="t-top"><table class="t-person"><tr><td class="label">会社名</td><td class="value" id="tpCompany"></td></tr><tr><td class="label">所属</td><td class="value" id="tpDept"></td></tr><tr><td class="label">氏名</td><td class="value" id="tpName"></td></tr></table><div></div><table class="t-approval"><tr><th>責任者1</th><th>責任者2</th><th>責任者3</th><th>経理責任者</th></tr><tr><td></td><td></td><td></td><td></td></tr></table></div><div class="t-gap"></div><table class="t-table"><colgroup><col><col><col><col><col><col><col></colgroup><thead><tr><th>月日</th><th colspan="2">区間</th><th>電車</th><th>バス<br>タクシー</th><th>その他<br>高速・ガソリン代等</th><th>訪問先/備考</th></tr></thead><tbody id="tpRows"></tbody></table><table class="t-sub"><tr><td class="label" style="width:37%">小　　計</td><td id="tpTrainSum" style="width:11%"></td><td id="tpBusSum" style="width:12%"></td><td id="tpOtherSum" style="width:18%"></td><td style="width:11%;font-weight:700">受領印</td><td style="width:11%"></td></tr></table><table class="t-grand"><tr><td class="label" style="width:37%">合　　計</td><td id="tpTotal" style="width:33%"></td><td style="width:30%"></td></tr></table></div><div class="print-receipts" id="printReceipts"><h2>領収書添付</h2><div id="pReceiptImages"></div></div>
 
 <script>
 const DRAFT_KEY='expense_app_draft_v2',HISTORY_KEY='expense_app_history_v2';let receiptImages=[],saveTimer=null;const $=id=>document.getElementById(id),yen=x=>'¥'+Number(x||0).toLocaleString('ja-JP');function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
