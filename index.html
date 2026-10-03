@@ -42,6 +42,13 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 .t-sub td,.t-grand td{height:7mm;text-align:center;font-size:9pt}.t-sub .label,.t-grand .label{font-weight:700}
 @page{size:A4 portrait;margin:7mm 10mm}
 }
+
+.gas-box{border:1px solid #cdd8e8;border-radius:14px;padding:13px;margin:12px 0;background:#f8fbff}
+.gas-title{font-weight:900;font-size:17px;margin-bottom:5px}
+.gas-result{display:flex;justify-content:space-between;align-items:center;padding:11px 2px 4px;font-size:17px;font-weight:900}
+.gas-formula{font-size:12px;color:#667085;margin-top:4px;word-break:break-all}
+.gas-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.gas-actions{grid-template-columns:1fr}}
 </style></head><body>
 <div class="app"><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">経費明細</div><div id="expenses"></div><button class="btn add" onclick="addExpense()">＋ 経費を追加</button><div class="total"><span>合計</span><span id="total">¥0</span></div></div>
@@ -49,7 +56,21 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 <div class="card"><button class="btn pdf" onclick="makePDF()">A4 PDFを作成</button><button class="btn secondary" onclick="saveHistory()">申請履歴に保存</button><button class="btn danger" onclick="newForm()">新しい申請を作る</button><p class="hint">iPhone：A4 PDFを作成 → 印刷画面のプレビューを2本指で拡大 → 共有 →「ファイルに保存」。</p></div><div class="card"><div style="font-weight:900;font-size:18px">申請履歴</div><div id="history"></div></div><div class="card"><div style="font-weight:900;font-size:18px">iPhoneでアプリ風に使う</div><p class="hint">Safariでこのページを開き、共有ボタン →「ホーム画面に追加」。次回からホーム画面のアイコンから開けます。</p></div></div>
 <div id="transportSection" style="display:none">
 <div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="tApplyDate" type="date"></div><div class="field"><label>会社名</label><input id="tCompany" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="tDept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="tName" placeholder="例：菅原 光弥"></div></div><div id="tSaveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
-<div class="card"><div style="font-weight:900;font-size:18px">交通費明細</div><div id="tExpenses"></div><button class="btn add" onclick="addTransport()">＋ 交通費を追加</button><div class="total"><span>合計</span><span id="tTotal">¥0</span></div></div>
+<div class="card">
+<div class="gas-box">
+ <div class="gas-title">通勤ガソリン代</div>
+ <div class="hint">自宅 ⇄ 出勤店舗の通勤分を自動計算します。燃費は13km/Lで計算します。</div>
+ <div class="grid">
+  <div class="field"><label>往復距離（km）</label><input id="gasDistance" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例：52"></div>
+  <div class="field"><label>出勤日数（日）</label><input id="gasDays" type="number" inputmode="numeric" min="0" step="1" placeholder="例：19"></div>
+  <div class="field"><label>ガソリン単価（円/L）</label><input id="gasPrice" type="number" inputmode="decimal" min="0" step="0.1" placeholder="例：162.8"></div>
+  <div class="field"><label>出勤店舗</label><input id="gasWorkplace" placeholder="例：コストコ富谷"></div>
+ </div>
+ <div class="gas-result"><span>計算結果</span><span id="gasAmount">¥0</span></div>
+ <div id="gasFormula" class="gas-formula">ガソリン単価 ×（往復距離 ÷ 13）× 出勤日数</div>
+ <div class="gas-actions"><button class="btn add" type="button" onclick="applyGasExpense()">ガソリン代を明細に反映</button><button class="btn secondary" type="button" onclick="clearGas()">ガソリン入力をクリア</button></div>
+</div>
+<div style="font-weight:900;font-size:18px">交通費明細</div><div id="tExpenses"></div><button class="btn add" onclick="addTransport()">＋ 交通費を追加</button><div class="total"><span>合計</span><span id="tTotal">¥0</span></div></div>
 <div class="card"><button class="btn pdf" onclick="makeTransportPDF()">A4 PDFを作成</button><button class="btn secondary" onclick="saveTransportHistory()">申請履歴に保存</button><button class="btn danger" onclick="newTransport()">新しい申請を作る</button></div>
 <div class="card"><div style="font-weight:900;font-size:18px">交通費申請履歴</div><div id="tHistory"></div></div>
 </div></div>
@@ -119,15 +140,42 @@ function calcTransport(){
 function collectTransport(){
  const sums=calcTransport();
  return{applyDate:$('tApplyDate').value,company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,
+ gas:{distance:$('gasDistance').value,days:$('gasDays').value,price:$('gasPrice').value,workplace:$('gasWorkplace').value},
  expenses:[...$('tExpenses').querySelectorAll('.expense')].map(e=>({date:e.querySelector('.t-date').value,from:e.querySelector('.t-from').value,to:e.querySelector('.t-to').value,train:e.querySelector('.t-train').value,bus:e.querySelector('.t-bus').value,other:e.querySelector('.t-other').value,note:e.querySelector('.t-note').value})),tr:sums.tr,b:sums.b,o:sums.o,total:sums.total,savedAt:new Date().toISOString()};
 }
 function scheduleTransportSave(){clearTimeout(tSaveTimer);tSaveTimer=setTimeout(saveTransportDraft,250)}
 function saveTransportDraft(){try{localStorage.setItem(TDRAFT_KEY,JSON.stringify(collectTransport()));$('tSaveStatus').textContent='✓ 自動保存しました';setTimeout(()=>$('tSaveStatus').textContent='入力内容はこの端末に自動保存されます。',1200)}catch(e){}}
 function loadTransport(d){
  $('tApplyDate').value=d.applyDate||todayISO();$('tCompany').value=d.company||'株式会社グリンク';$('tDept').value=d.dept||'コストコ富谷';$('tName').value=d.name||'';
+ const g=d.gas||{};$('gasDistance').value=g.distance||'';$('gasDays').value=g.days||'';$('gasPrice').value=g.price||'';$('gasWorkplace').value=g.workplace||d.dept||'コストコ富谷';updateGasPreview();
  $('tExpenses').innerHTML='';(d.expenses&&d.expenses.length?d.expenses:[{}]).forEach(addTransport);calcTransport();
 }
-function newTransport(){if(!confirm('現在の交通費入力をクリアして新しい申請を作りますか？'))return;loadTransport({applyDate:todayISO(),company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,expenses:[{}]})}
+
+function gasCalc(){
+ const distance=Number($('gasDistance').value||0),days=Number($('gasDays').value||0),price=Number($('gasPrice').value||0);
+ const raw=price*(distance/13)*days,amount=Math.floor(raw);
+ const priceText=$('gasPrice').value||'0',distanceText=$('gasDistance').value||'0',daysText=$('gasDays').value||'0';
+ return{distance,days,price,raw,amount,formula:priceText+'('+distanceText+'km/13L)×'+daysText+'日'};
+}
+function updateGasPreview(){const g=gasCalc();$('gasAmount').textContent=yen(g.amount);$('gasFormula').textContent=g.formula;return g}
+function applyGasExpense(){
+ const g=updateGasPreview();
+ if(!g.distance||!g.days||!g.price){alert('往復距離・出勤日数・ガソリン単価を入力してください。');return}
+ const workplace=$('gasWorkplace').value||$('tDept').value||'出勤店舗';
+ let row=[...$('tExpenses').querySelectorAll('.expense')].find(e=>e.dataset.gas==='1');
+ if(!row){addTransport({});row=[...$('tExpenses').querySelectorAll('.expense')].slice(-1)[0];row.dataset.gas='1'}
+ row.querySelector('.t-date').value=$('tApplyDate').value;
+ row.querySelector('.t-from').value='自宅';
+ row.querySelector('.t-to').value=workplace;
+ row.querySelector('.t-train').value='';
+ row.querySelector('.t-bus').value='';
+ row.querySelector('.t-other').value=g.amount;
+ row.querySelector('.t-note').value=g.formula;
+ calcTransport();scheduleTransportSave();alert('通勤ガソリン代を明細に反映しました。');
+}
+function clearGas(){$('gasDistance').value='';$('gasDays').value='';$('gasPrice').value='';updateGasPreview();scheduleTransportSave()}
+['gasDistance','gasDays','gasPrice','gasWorkplace'].forEach(id=>{document.addEventListener('input',e=>{if(e.target&&e.target.id===id){updateGasPreview();scheduleTransportSave()}})});
+function newTransport(){if(!confirm('現在の交通費入力をクリアして新しい申請を作りますか？'))return;loadTransport({applyDate:todayISO(),company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,gas:{workplace:$('gasWorkplace').value||$('tDept').value},expenses:[{}]})}
 function saveTransportHistory(){const d=collectTransport();let h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]');h.unshift(d);h=h.slice(0,30);localStorage.setItem(THISTORY_KEY,JSON.stringify(h));renderTransportHistory();alert('交通費申請履歴に保存しました。')}
 function renderTransportHistory(){
  const h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]'),box=$('tHistory');box.innerHTML='';
@@ -148,5 +196,5 @@ function makeTransportPDF(){
  saveTransportDraft();setTimeout(()=>window.print(),100);
 }
 window.addEventListener('afterprint',()=>document.body.classList.remove('expense-print','transport-print'));
-(function(){bindInputs();let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(e){}if(d)loadData(d);else loadData({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}],receipts:[]});renderHistory();let td=null;try{td=JSON.parse(localStorage.getItem(TDRAFT_KEY)||'null')}catch(e){}if(td)loadTransport(td);else loadTransport({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}]});renderTransportHistory();switchMode(localStorage.getItem('claim_mode')||'expense')})();
+(function(){bindInputs();let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(e){}if(d)loadData(d);else loadData({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}],receipts:[]});renderHistory();let td=null;try{td=JSON.parse(localStorage.getItem(TDRAFT_KEY)||'null')}catch(e){}if(td)loadTransport(td);else loadTransport({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',gas:{workplace:'コストコ富谷'},expenses:[{}]});renderTransportHistory();switchMode(localStorage.getItem('claim_mode')||'expense')})();
 </script></body></html>
