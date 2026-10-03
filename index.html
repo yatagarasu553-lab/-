@@ -82,6 +82,71 @@ function saveHistory(){const d=collect();let h=JSON.parse(localStorage.getItem(H
 function renderHistory(){const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'),box=$('history');box.innerHTML='';if(!h.length){box.innerHTML='<div class="hint">まだ履歴はありません。</div>';return}h.forEach((d,i)=>{const el=document.createElement('div');el.className='history-item';el.innerHTML='<div class="history-top"><span>'+esc(d.applyDate||'日付なし')+' '+esc(d.name||'')+'</span><span>'+yen(d.total||0)+'</span></div><div class="history-sub">'+(d.expenses||[]).length+'件の明細</div><div class="history-actions"><button onclick="loadHistory('+i+')">再編集</button><button onclick="deleteHistory('+i+')">削除</button></div>';box.appendChild(el)})}function loadHistory(i){const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');if(h[i])loadData(h[i])}function deleteHistory(i){if(!confirm('この履歴を削除しますか？'))return;let h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');h.splice(i,1);localStorage.setItem(HISTORY_KEY,JSON.stringify(h));renderHistory()}
 function compressImage(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height,max=1600;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.72))};img.onerror=reject;img.src=r.result};r.onerror=reject;r.readAsDataURL(file)})}
 $('receiptInput').addEventListener('change',async e=>{for(const f of [...e.target.files]){if(receiptImages.length>=8){alert('領収書は8枚までです。');break}try{receiptImages.push(await compressImage(f))}catch(_){}}e.target.value='';renderReceipts();scheduleSave()});function renderReceipts(){const b=$('receiptList');b.innerHTML='';receiptImages.forEach((src,i)=>{const x=document.createElement('div');x.className='receipt-item';x.innerHTML='<img src="'+src+'"><button type="button" onclick="removeReceipt('+i+')">×</button>';b.appendChild(x)})}function removeReceipt(i){receiptImages.splice(i,1);renderReceipts();scheduleSave()}
-function makePDF(){const ad=$('applyDate').value,dt=ad?new Date(ad+'T00:00:00'):new Date();$('pYear').textContent=dt.getFullYear();$('pMonth').textContent=dt.getMonth()+1;$('pDay').textContent=dt.getDate();$('pCompany').textContent=$('company').value;$('pDept').textContent=$('dept').value;$('pName').textContent=$('name').value;const body=$('pRows');body.innerHTML='';let total=0,es=[...document.querySelectorAll('.expense')];es.forEach(e=>{const ds=e.querySelector('.e-date').value;let md='';if(ds){const x=new Date(ds+'T00:00:00');md=(x.getMonth()+1)+'/'+x.getDate()}const a=Number(e.querySelector('.e-amount').value||0);total+=a;const tr=document.createElement('tr');tr.innerHTML='<td>'+md+'</td><td>'+esc(e.querySelector('.e-payee').value)+'</td><td>'+esc(e.querySelector('.e-purpose').value)+'</td><td>'+esc(e.querySelector('.e-item').value)+'</td><td>'+esc(e.querySelector('.e-note').value).replace(/\n/g,'<br>')+'</td><td class="money">'+(a?yen(a):'')+'</td>';body.appendChild(tr)});for(let i=es.length;i<15;i++){const tr=document.createElement('tr');tr.innerHTML='<td></td><td></td><td></td><td></td><td></td><td></td>';body.appendChild(tr)}$('pTotal').textContent=yen(total);const pr=$('pReceiptImages');pr.innerHTML='';receiptImages.forEach(src=>{const img=document.createElement('img');img.src=src;pr.appendChild(img)});$('printReceipts').style.display=receiptImages.length?'block':'none';saveDraft();setTimeout(()=>window.print(),100)}
-(function(){bindInputs();let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(e){}if(d)loadData(d);else loadData({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}],receipts:[]});renderHistory()})();
+function makePDF(){document.body.classList.remove('transport-print');document.body.classList.add('expense-print');const ad=$('applyDate').value,dt=ad?new Date(ad+'T00:00:00'):new Date();$('pYear').textContent=dt.getFullYear();$('pMonth').textContent=dt.getMonth()+1;$('pDay').textContent=dt.getDate();$('pCompany').textContent=$('company').value;$('pDept').textContent=$('dept').value;$('pName').textContent=$('name').value;const body=$('pRows');body.innerHTML='';let total=0,es=[...document.querySelectorAll('.expense')];es.forEach(e=>{const ds=e.querySelector('.e-date').value;let md='';if(ds){const x=new Date(ds+'T00:00:00');md=(x.getMonth()+1)+'/'+x.getDate()}const a=Number(e.querySelector('.e-amount').value||0);total+=a;const tr=document.createElement('tr');tr.innerHTML='<td>'+md+'</td><td>'+esc(e.querySelector('.e-payee').value)+'</td><td>'+esc(e.querySelector('.e-purpose').value)+'</td><td>'+esc(e.querySelector('.e-item').value)+'</td><td>'+esc(e.querySelector('.e-note').value).replace(/\n/g,'<br>')+'</td><td class="money">'+(a?yen(a):'')+'</td>';body.appendChild(tr)});for(let i=es.length;i<15;i++){const tr=document.createElement('tr');tr.innerHTML='<td></td><td></td><td></td><td></td><td></td><td></td>';body.appendChild(tr)}$('pTotal').textContent=yen(total);const pr=$('pReceiptImages');pr.innerHTML='';receiptImages.forEach(src=>{const img=document.createElement('img');img.src=src;pr.appendChild(img)});$('printReceipts').style.display=receiptImages.length?'block':'none';saveDraft();setTimeout(()=>window.print(),100)}
+
+const TDRAFT_KEY='transport_app_draft_v1',THISTORY_KEY='transport_app_history_v1';
+let tSaveTimer=null;
+function switchMode(mode){
+ const e=mode==='expense';
+ $('expenseSection').style.display=e?'block':'none';
+ $('transportSection').style.display=e?'none':'block';
+ $('expenseTab').classList.toggle('active',e);
+ $('transportTab').classList.toggle('active',!e);
+ localStorage.setItem('claim_mode',mode);
+}
+function addTransport(v={}){
+ const d=document.createElement('div');d.className='expense';
+ d.innerHTML='<div class="expense-head"><span>明細</span><button class="remove" type="button">削除</button></div>'+
+ '<div class="grid"><div class="field"><label>月日</label><input class="t-date" type="date" value="'+esc(v.date||'')+'"></div>'+
+ '<div class="field"><label>出発</label><input class="t-from" value="'+esc(v.from||'')+'"></div>'+
+ '<div class="field"><label>到着</label><input class="t-to" value="'+esc(v.to||'')+'"></div>'+
+ '<div class="field"><label>電車</label><input class="t-train" type="number" inputmode="numeric" min="0" value="'+esc(v.train||'')+'"></div>'+
+ '<div class="field"><label>バス・タクシー</label><input class="t-bus" type="number" inputmode="numeric" min="0" value="'+esc(v.bus||'')+'"></div>'+
+ '<div class="field"><label>その他（高速・ガソリン代等）</label><input class="t-other" type="number" inputmode="numeric" min="0" value="'+esc(v.other||'')+'"></div></div>'+
+ '<div class="field"><label>訪問先 / 備考</label><textarea class="t-note">'+esc(v.note||'')+'</textarea></div>';
+ $('tExpenses').appendChild(d);
+ d.querySelector('.remove').onclick=()=>{d.remove();renumberTransport();calcTransport();scheduleTransportSave()};
+ d.querySelectorAll('input,textarea').forEach(x=>{x.addEventListener('input',()=>{calcTransport();scheduleTransportSave()});x.addEventListener('change',scheduleTransportSave)});
+ renumberTransport();calcTransport();scheduleTransportSave();
+}
+function renumberTransport(){[...$('tExpenses').querySelectorAll('.expense')].forEach((e,i)=>e.querySelector('.expense-head span').textContent='明細 '+(i+1))}
+function calcTransport(){
+ let tr=0,b=0,o=0;
+ $('tExpenses').querySelectorAll('.expense').forEach(e=>{tr+=Number(e.querySelector('.t-train').value||0);b+=Number(e.querySelector('.t-bus').value||0);o+=Number(e.querySelector('.t-other').value||0)});
+ $('tTotal').textContent=yen(tr+b+o);
+ return{tr,b,o,total:tr+b+o};
+}
+function collectTransport(){
+ const sums=calcTransport();
+ return{applyDate:$('tApplyDate').value,company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,
+ expenses:[...$('tExpenses').querySelectorAll('.expense')].map(e=>({date:e.querySelector('.t-date').value,from:e.querySelector('.t-from').value,to:e.querySelector('.t-to').value,train:e.querySelector('.t-train').value,bus:e.querySelector('.t-bus').value,other:e.querySelector('.t-other').value,note:e.querySelector('.t-note').value})),tr:sums.tr,b:sums.b,o:sums.o,total:sums.total,savedAt:new Date().toISOString()};
+}
+function scheduleTransportSave(){clearTimeout(tSaveTimer);tSaveTimer=setTimeout(saveTransportDraft,250)}
+function saveTransportDraft(){try{localStorage.setItem(TDRAFT_KEY,JSON.stringify(collectTransport()));$('tSaveStatus').textContent='✓ 自動保存しました';setTimeout(()=>$('tSaveStatus').textContent='入力内容はこの端末に自動保存されます。',1200)}catch(e){}}
+function loadTransport(d){
+ $('tApplyDate').value=d.applyDate||todayISO();$('tCompany').value=d.company||'株式会社グリンク';$('tDept').value=d.dept||'コストコ富谷';$('tName').value=d.name||'';
+ $('tExpenses').innerHTML='';(d.expenses&&d.expenses.length?d.expenses:[{}]).forEach(addTransport);calcTransport();
+}
+function newTransport(){if(!confirm('現在の交通費入力をクリアして新しい申請を作りますか？'))return;loadTransport({applyDate:todayISO(),company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,expenses:[{}]})}
+function saveTransportHistory(){const d=collectTransport();let h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]');h.unshift(d);h=h.slice(0,30);localStorage.setItem(THISTORY_KEY,JSON.stringify(h));renderTransportHistory();alert('交通費申請履歴に保存しました。')}
+function renderTransportHistory(){
+ const h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]'),box=$('tHistory');box.innerHTML='';
+ if(!h.length){box.innerHTML='<div class="hint">まだ履歴はありません。</div>';return}
+ h.forEach((d,i)=>{const el=document.createElement('div');el.className='history-item';el.innerHTML='<div class="history-top"><span>'+esc(d.applyDate||'日付なし')+' '+esc(d.name||'')+'</span><span>'+yen(d.total||0)+'</span></div><div class="history-sub">'+(d.expenses||[]).length+'件の明細</div><div class="history-actions"><button onclick="loadTransportHistory('+i+')">再編集</button><button onclick="deleteTransportHistory('+i+')">削除</button></div>';box.appendChild(el)});
+}
+function loadTransportHistory(i){const h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]');if(h[i])loadTransport(h[i])}
+function deleteTransportHistory(i){if(!confirm('この履歴を削除しますか？'))return;let h=JSON.parse(localStorage.getItem(THISTORY_KEY)||'[]');h.splice(i,1);localStorage.setItem(THISTORY_KEY,JSON.stringify(h));renderTransportHistory()}
+function makeTransportPDF(){
+ document.body.classList.remove('expense-print');document.body.classList.add('transport-print');
+ const d=collectTransport(),dt=d.applyDate?new Date(d.applyDate+'T00:00:00'):new Date();
+ $('tpYear').textContent=dt.getFullYear();$('tpMonth').textContent=dt.getMonth()+1;$('tpDay').textContent=dt.getDate();
+ $('tpCompany').textContent=d.company;$('tpDept').textContent=d.dept;$('tpName').textContent=d.name;
+ const body=$('tpRows');body.innerHTML='';
+ d.expenses.slice(0,36).forEach(e=>{let md='';if(e.date){const x=new Date(e.date+'T00:00:00');md=(x.getMonth()+1)+'月'+x.getDate()+'日'}const tr=document.createElement('tr');tr.innerHTML='<td>'+md+'</td><td>'+esc(e.from)+'</td><td>'+esc(e.to)+'</td><td>'+(e.train?yen(e.train):'')+'</td><td>'+(e.bus?yen(e.bus):'')+'</td><td>'+(e.other?yen(e.other):'')+'</td><td>'+esc(e.note).split(String.fromCharCode(10)).join('<br>')+'</td>';body.appendChild(tr)});
+ for(let i=Math.min(d.expenses.length,36);i<36;i++){const tr=document.createElement('tr');tr.innerHTML='<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';body.appendChild(tr)}
+ $('tpTrainSum').textContent=yen(d.tr);$('tpBusSum').textContent=yen(d.b);$('tpOtherSum').textContent=yen(d.o);$('tpTotal').textContent=yen(d.total);
+ saveTransportDraft();setTimeout(()=>window.print(),100);
+}
+window.addEventListener('afterprint',()=>document.body.classList.remove('expense-print','transport-print'));
+(function(){bindInputs();let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(e){}if(d)loadData(d);else loadData({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}],receipts:[]});renderHistory();let td=null;try{td=JSON.parse(localStorage.getItem(TDRAFT_KEY)||'null')}catch(e){}if(td)loadTransport(td);else loadTransport({applyDate:todayISO(),company:'株式会社グリンク',dept:'コストコ富谷',expenses:[{}]});renderTransportHistory();switchMode(localStorage.getItem('claim_mode')||'expense')})();
 </script></body></html>
