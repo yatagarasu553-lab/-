@@ -5,7 +5,7 @@
  .excel-blank1{height:6mm}
  .excel-status-row{height:8mm;display:flex;align-items:stretch;position:relative}
  .status-table{border-collapse:collapse;table-layout:fixed;width:46.7mm;height:7mm}.status-table td{border:1px solid #000;text-align:center;vertical-align:middle;font-size:9pt;padding:0}.status-table td:nth-child(1){width:11mm}.status-table td:nth-child(2),.status-table td:nth-child(3){width:17.85mm}
- .status-zero{display:flex;align-items:center;font-size:15pt;font-weight:700;padding-left:5mm}
+
  .excel-date-row{height:7mm;display:flex;align-items:center;justify-content:flex-end;font-size:12pt;font-weight:700;padding-right:1mm;word-spacing:1mm}.excel-date-row span{display:inline-block;text-align:center}.excel-date-row .year{min-width:25mm}.excel-date-row .month{min-width:18mm}.excel-date-row .day{min-width:18mm}
  .excel-top{display:grid;grid-template-columns:47.8% 5.8% 46.4%;height:24mm}
  .person-table,.approval-table,.excel-expense{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}
@@ -27,7 +27,7 @@
 <div class="print-sheet">
  <div class="excel-title">経費立替明細書（兼出金票）</div>
  <div class="excel-blank1"></div>
- <div class="excel-status-row"><table class="status-table"><tr><td>申請</td><td>済</td><td>未</td></tr></table><div class="status-zero">0</div></div>
+ <div class="excel-status-row"><table class="status-table"><tr><td>申請</td><td>済</td><td>未</td></tr></table></div>
  <div class="excel-date-row"><span class="year" id="pYear"></span>年 <span class="month" id="pMonth"></span>月 <span class="day" id="pDay"></span>日</div>
  <div class="excel-top">
   <table class="person-table"><tr><td class="label">会社名</td><td class="value" id="pCompany"></td></tr><tr><td class="label">所属</td><td class="value" id="pDept"></td></tr><tr><td class="label">氏名</td><td class="value" id="pName"></td></tr></table>
