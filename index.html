@@ -61,9 +61,10 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 <div class="card"><div style="font-weight:900;font-size:18px">店舗責任者（責任者1）印鑑</div>
 <div class="stamp-box">
  <div class="stamp-row"><label class="stamp-toggle"><input id="expenseStampOn" type="checkbox"> 印鑑を入れる</label>
- <input id="managerStampInput" type="file" accept="image/*">
- <img id="managerStampPreview" class="stamp-preview" alt="印鑑プレビュー"><span id="stampStatus" class="hint">印鑑画像：未登録</span></div>
- <div class="hint">印鑑画像はこの端末内だけに保存されます。OFFの場合はPDFに表示されません。</div>
+ <span id="stampUploadArea"><input id="managerStampInput" type="file" accept="image/*"></span>
+ <img id="managerStampPreview" class="stamp-preview" alt="印鑑プレビュー"><span id="stampStatus" class="hint">印鑑画像：未登録</span>
+ <button id="stampChangeBtn" type="button" class="secondary" style="display:none;border:0;border-radius:9px;padding:8px 10px;font-weight:700" onclick="changeManagerStamp()">印鑑を変更</button></div>
+ <div class="hint">初回だけ印鑑画像を登録します。登録後はこの端末に保存され、普段はON/OFFだけで使えます。</div>
 </div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">経費明細</div><div id="expenses"></div><button class="btn add" onclick="addExpense()">＋ 経費を追加</button><div class="total"><span>合計</span><span id="total">¥0</span></div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">領収書</div><div class="receipt-input"><input id="receiptInput" type="file" accept="image/*" capture="environment" multiple><div class="hint">カメラ撮影または写真ライブラリから追加できます。PDF出力時は申請書の後ろに領収書ページとして付きます。</div></div><div id="receiptList" class="receipt-list"></div></div>
@@ -126,9 +127,25 @@ function makePDF(){document.body.classList.remove('transport-print');document.bo
 const STAMP_KEY='manager_stamp_image_v1';
 let managerStampImage=localStorage.getItem(STAMP_KEY)||'';
 function renderStampPreview(){
- const img=$('managerStampPreview'),st=$('stampStatus');
- if(managerStampImage){img.src=managerStampImage;img.style.display='block';if(st)st.textContent='印鑑画像：登録済み'}
- else{img.removeAttribute('src');img.style.display='none';if(st)st.textContent='印鑑画像：未登録'}
+ const img=$('managerStampPreview'),st=$('stampStatus'),up=$('stampUploadArea'),btn=$('stampChangeBtn');
+ if(managerStampImage){
+  img.src=managerStampImage;img.style.display='block';
+  if(st)st.textContent='印鑑画像：登録済み';
+  if(up)up.style.display='none';
+  if(btn)btn.style.display='inline-block';
+ }else{
+  img.removeAttribute('src');img.style.display='none';
+  if(st)st.textContent='印鑑画像：未登録';
+  if(up)up.style.display='inline-block';
+  if(btn)btn.style.display='none';
+ }
+}
+function changeManagerStamp(){
+ const up=$('stampUploadArea'),btn=$('stampChangeBtn');
+ if(up)up.style.display='inline-block';
+ if(btn)btn.style.display='none';
+ const input=$('managerStampInput');
+ if(input)input.click();
 }
 function fileToSmallDataURL(file){
  return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height,max=500;if(Math.max(w,h)>max){const q=max/Math.max(w,h);w=Math.round(w*q);h=Math.round(h*q)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);resolve(c.toDataURL('image/png'))};im.onerror=reject;im.src=r.result};r.onerror=reject;r.readAsDataURL(file)})
