@@ -128,7 +128,7 @@ function addTransport(v={}){
  $('tExpenses').appendChild(d);
  d.querySelector('.remove').onclick=()=>{d.remove();renumberTransport();calcTransport();scheduleTransportSave()};
  d.querySelectorAll('input,textarea').forEach(x=>{x.addEventListener('input',()=>{calcTransport();scheduleTransportSave()});x.addEventListener('change',scheduleTransportSave)});
- renumberTransport();calcTransport();scheduleTransportSave();
+ if(v.monthOnly)d.dataset.monthonly='1';renumberTransport();calcTransport();scheduleTransportSave();
 }
 function renumberTransport(){[...$('tExpenses').querySelectorAll('.expense')].forEach((e,i)=>e.querySelector('.expense-head span').textContent='明細 '+(i+1))}
 function calcTransport(){
@@ -141,7 +141,7 @@ function collectTransport(){
  const sums=calcTransport();
  return{applyDate:$('tApplyDate').value,company:$('tCompany').value,dept:$('tDept').value,name:$('tName').value,
  gas:{distance:$('gasDistance').value,days:$('gasDays').value,price:$('gasPrice').value,workplace:$('gasWorkplace').value},
- expenses:[...$('tExpenses').querySelectorAll('.expense')].map(e=>({date:e.querySelector('.t-date').value,from:e.querySelector('.t-from').value,to:e.querySelector('.t-to').value,train:e.querySelector('.t-train').value,bus:e.querySelector('.t-bus').value,other:e.querySelector('.t-other').value,note:e.querySelector('.t-note').value})),tr:sums.tr,b:sums.b,o:sums.o,total:sums.total,savedAt:new Date().toISOString()};
+ expenses:[...$('tExpenses').querySelectorAll('.expense')].map(e=>({date:e.querySelector('.t-date').value,from:e.querySelector('.t-from').value,to:e.querySelector('.t-to').value,train:e.querySelector('.t-train').value,bus:e.querySelector('.t-bus').value,other:e.querySelector('.t-other').value,note:e.querySelector('.t-note').value,monthOnly:e.dataset.monthonly==='1'})),tr:sums.tr,b:sums.b,o:sums.o,total:sums.total,savedAt:new Date().toISOString()};
 }
 function scheduleTransportSave(){clearTimeout(tSaveTimer);tSaveTimer=setTimeout(saveTransportDraft,250)}
 function saveTransportDraft(){try{localStorage.setItem(TDRAFT_KEY,JSON.stringify(collectTransport()));$('tSaveStatus').textContent='✓ 自動保存しました';setTimeout(()=>$('tSaveStatus').textContent='入力内容はこの端末に自動保存されます。',1200)}catch(e){}}
@@ -164,7 +164,7 @@ function applyGasExpense(){
  const workplace=$('gasWorkplace').value||$('tDept').value||'出勤店舗';
  let row=[...$('tExpenses').querySelectorAll('.expense')].find(e=>e.dataset.gas==='1');
  if(!row){addTransport({});row=[...$('tExpenses').querySelectorAll('.expense')].slice(-1)[0];row.dataset.gas='1'}
- row.querySelector('.t-date').value=$('tApplyDate').value;
+ row.querySelector('.t-date').value=$('tApplyDate').value;row.dataset.monthonly='1';
  row.querySelector('.t-from').value='自宅';
  row.querySelector('.t-to').value=workplace;
  row.querySelector('.t-train').value='';
@@ -190,7 +190,7 @@ function makeTransportPDF(){
  $('tpYear').textContent=dt.getFullYear();$('tpMonth').textContent=dt.getMonth()+1;$('tpDay').textContent=dt.getDate();
  $('tpCompany').textContent=d.company;$('tpDept').textContent=d.dept;$('tpName').textContent=d.name;
  const body=$('tpRows');body.innerHTML='';
- d.expenses.slice(0,36).forEach(e=>{let md='';if(e.date){const x=new Date(e.date+'T00:00:00');md=(x.getMonth()+1)+'月'+x.getDate()+'日'}const tr=document.createElement('tr');tr.innerHTML='<td>'+md+'</td><td>'+esc(e.from)+'</td><td>'+esc(e.to)+'</td><td>'+(e.train?yen(e.train):'')+'</td><td>'+(e.bus?yen(e.bus):'')+'</td><td>'+(e.other?yen(e.other):'')+'</td><td>'+esc(e.note).split(String.fromCharCode(10)).join('<br>')+'</td>';body.appendChild(tr)});
+ d.expenses.slice(0,36).forEach(e=>{let md='';if(e.date){const x=new Date(e.date+'T00:00:00');md=e.monthOnly?((x.getMonth()+1)+'月'):((x.getMonth()+1)+'月'+x.getDate()+'日')}const tr=document.createElement('tr');tr.innerHTML='<td>'+md+'</td><td>'+esc(e.from)+'</td><td>'+esc(e.to)+'</td><td>'+(e.train?yen(e.train):'')+'</td><td>'+(e.bus?yen(e.bus):'')+'</td><td>'+(e.other?yen(e.other):'')+'</td><td>'+esc(e.note).split(String.fromCharCode(10)).join('<br>')+'</td>';body.appendChild(tr)});
  for(let i=Math.min(d.expenses.length,36);i<36;i++){const tr=document.createElement('tr');tr.innerHTML='<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';body.appendChild(tr)}
  $('tpTrainSum').textContent=yen(d.tr);$('tpBusSum').textContent=yen(d.b);$('tpOtherSum').textContent=yen(d.o);$('tpTotal').textContent=yen(d.total);
  saveTransportDraft();setTimeout(()=>window.print(),100);
