@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#173f73">
+<title>有給休暇申請アプリ</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;color:#172033;background:#f3f6fb}
+*{box-sizing:border-box}body{margin:0}.app{max-width:760px;margin:auto;padding:16px 14px 100px}.hero{background:#173f73;color:#fff;padding:20px;border-radius:18px;margin-bottom:14px}.hero h1{font-size:22px;margin:0 0 6px}.hero p{margin:0;opacity:.88;font-size:13px}
+.card{background:#fff;border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 3px 16px #102a4312}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin:9px 0}.field label{display:block;font-size:12px;font-weight:700;margin:0 0 5px;color:#42536b}.field input,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:10px;padding:11px 12px;font-size:16px;background:#fff}.field textarea{min-height:90px;resize:vertical}
+.btn{width:100%;border:0;border-radius:13px;padding:14px;font-size:16px;font-weight:800;margin-top:10px}.pdf{background:#173f73;color:#fff}.secondary{background:#eef2f6;color:#26364a}.danger{background:#fff0f0;color:#b42318}.hint{font-size:12px;color:#667085;line-height:1.5}.status{font-size:12px;color:#26734d;margin-top:8px}
+.print-sheet{display:none}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.app{padding:12px 10px 90px}}
+@media print{
+ body{background:#fff;margin:0}.app{display:none!important}.print-sheet{display:block;width:190mm;margin:0 auto;color:#000;font-family:"Yu Mincho","Hiragino Mincho ProN","Yu Gothic",serif}
+ .title{font-size:22pt;font-weight:700;text-align:center;margin-top:6mm;letter-spacing:1mm}.to-line{font-size:11.5pt;line-height:1.45;margin-top:5mm;margin-left:12mm}
+ .top-table,.period-table,.approval-table{border-collapse:collapse;table-layout:fixed;width:100%}.top-table td,.period-table td,.approval-table td{border:1px solid #000;padding:0;vertical-align:middle}
+ .top-wrap{margin-top:11mm;margin-left:12mm;width:118mm}.top-table{width:118mm}.top-table.date-only{width:58mm}.top-table.date-only .label{width:16mm}.top-table.date-only .dateval{width:42mm}.top-table .label{width:16mm;text-align:center;font-size:11.5pt}.top-table .dateval{width:42mm;text-align:center;font-size:11pt}.top-table .belong{width:42mm}.top-table .nameLabel{width:12mm;text-align:center;font-size:11.5pt}.top-table .nameVal{width:41mm}.top-table .seal{width:18mm;text-align:center;font-size:11.5pt}
+ .rowh1{height:19mm}.rowh2{height:16mm}.pad{padding:2mm 3mm;font-size:11pt}
+ .period-wrap{margin-top:12mm;margin-left:12mm;width:145mm}.period-table{width:145mm}.period-table .leftlab{width:21mm;text-align:center;font-size:13pt;letter-spacing:2mm}.period-table .content{width:124mm}.period-table .r1{height:30mm}.period-table .r2{height:20mm}.period-table .r3{height:26mm}.period-inner{position:relative;height:100%;padding:5mm 6mm;font-size:12pt}.period-line{display:flex;align-items:center;gap:4mm;margin-bottom:8mm}.days{position:absolute;right:8mm;top:50%;transform:translateY(-50%);font-size:12pt}.reason-area,.note-area{height:100%;padding:4mm 5mm;font-size:11.5pt;white-space:pre-wrap}
+ .notes{margin-top:10mm;margin-left:19mm;font-size:9.3pt;line-height:1.5}.notes .line2{margin-left:17mm}
+ .approval-wrap{margin-top:13mm;margin-left:12mm;width:69mm}.approval-table{width:69mm}.approval-table .ap1{width:50mm}.approval-table .ap2,.approval-table .ap3{width:9.5mm}.approval-top{height:10mm;font-size:10.5pt;text-align:center}.approval-bottom{height:16mm;font-size:10.5pt;text-align:center}.approval-date{padding:2mm;font-size:10.5pt;text-align:center}
+ @page{size:A4 portrait;margin:8mm 10mm}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="hero"><h1>有給休暇申請アプリ</h1><p>スマホ入力・自動保存・A4 PDF印刷</p></div>
+ 
+ <div class="card">
+  <div class="grid">
+   <div class="field"><label>申請日</label><input id="applyDate" type="date"></div>
+   <div class="field"><label>所属</label><input id="department" placeholder="例：コストコ富谷"></div>
+   <div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div>
+   <div class="field"><label>休暇日数</label><input id="days" placeholder="自動計算" readonly></div>
+  </div>
+  <div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div>
+ </div>
+ 
+ <div class="card">
+  <div class="grid">
+   <div class="field"><label>休暇開始日</label><input id="startDate" type="date"></div>
+   <div class="field"><label>休暇終了日</label><input id="endDate" type="date"></div>
+  </div>
+  <div class="field"><label>休暇事由</label><textarea id="reason" placeholder="例：私用のため"></textarea></div>
+  <div class="field"><label>備考</label><textarea id="note" placeholder="3日以上の休暇の場合は連絡先などを記入"></textarea></div>
+ </div>
+ 
+ <div class="card">
+  <button class="btn pdf" onclick="makePDF()">A4 PDFを作成</button>
+  <button class="btn secondary" onclick="newForm()">新しい申請を作る</button>
+  <p class="hint">iPhone：A4 PDFを作成 → 印刷画面のプレビューを2本指で拡大 → 共有 →「ファイルに保存」。</p>
+ </div>
+</div>
+
+<div class="print-sheet">
+ <div class="title">有給休暇申請</div>
+ <div class="to-line">株式会社グリンク<br>代表取締役　清田　英輝殿</div>
+ 
+ <div class="top-wrap">
+  <table class="top-table date-only">
+   <tr class="rowh1">
+    <td class="label">申請日</td>
+    <td class="dateval" id="pApplyDate"></td>
+   </tr></table>
+  <table class="top-table">
+   <tr class="rowh2">
+    <td class="label">所属</td>
+    <td class="belong pad" id="pDepartment"></td>
+    <td class="nameLabel">氏名</td>
+    <td class="nameVal pad" id="pName"></td>
+    <td class="seal">印</td>
+   </tr>
+  </table>
+ </div>
+ 
+ <div class="period-wrap">
+  <table class="period-table">
+   <tr class="r1">
+    <td class="leftlab">期　間</td>
+    <td class="content">
+      <div class="period-inner">
+        <div class="period-line">自　<span id="pStartDate"></span></div>
+        <div class="period-line" style="margin-bottom:0">至　<span id="pEndDate"></span></div>
+        <div class="days">（ <span id="pDays"></span> ）日間</div>
+      </div>
+    </td>
+   </tr>
+   <tr class="r2">
+    <td class="leftlab">休　暇<br>事　由</td>
+    <td class="content"><div class="reason-area" id="pReason"></div></td>
+   </tr>
+   <tr class="r3">
+    <td class="leftlab">備　考</td>
+    <td class="content"><div class="note-area" id="pNote"></div></td>
+   </tr>
+  </table>
+ </div>
+ 
+ <div class="notes">
+  <div>注意 (1)届出は休暇の５日前までに提出してください。</div>
+  <div class="line2">(2)休暇が３日以上にわたるときは、連絡先を備考欄に記載してください。</div>
+ </div>
+ 
+ <div class="approval-wrap">
+  <table class="approval-table">
+   <tr class="approval-top">
+    <td class="ap1">承　認　日</td>
+    <td class="ap2">専務</td>
+    <td class="ap3">部長</td>
+   </tr>
+   <tr class="approval-bottom">
+    <td class="approval-date">令和　　年　　月　　日</td>
+    <td></td>
+    <td></td>
+   </tr>
+  </table>
+ </div>
+</div>
+
+<script>
+const DRAFT_KEY='paid_leave_app_draft_v1';
+const $=id=>document.getElementById(id);
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function formatReiwa(dateStr){if(!dateStr)return '令和　　年　　月　　日';const d=new Date(dateStr+'T00:00:00');const y=d.getFullYear()-2018;return `令和 ${y} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日`;}
+function daysInclusive(s,e){if(!s||!e)return '';const sd=new Date(s+'T00:00:00');const ed=new Date(e+'T00:00:00');const diff=Math.round((ed-sd)/(1000*60*60*24))+1;return diff>0?diff:''}
+function syncDays(){ $('days').value=daysInclusive($('startDate').value,$('endDate').value); scheduleSave(); }
+function collect(){return{applyDate:$('applyDate').value,department:$('department').value,name:$('name').value,startDate:$('startDate').value,endDate:$('endDate').value,days:$('days').value,reason:$('reason').value,note:$('note').value}}
+let timer=null;function scheduleSave(){clearTimeout(timer);timer=setTimeout(saveDraft,250)}
+function saveDraft(){localStorage.setItem(DRAFT_KEY,JSON.stringify(collect()));$('saveStatus').textContent='✓ 自動保存しました';setTimeout(()=>{$('saveStatus').textContent='入力内容はこの端末に自動保存されます。'},1200)}
+function loadData(d){$('applyDate').value=d.applyDate||todayISO();$('department').value=d.department||'';$('name').value=d.name||'';$('startDate').value=d.startDate||'';$('endDate').value=d.endDate||'';$('reason').value=d.reason||'';$('note').value=d.note||'';syncDays()}
+function newForm(){if(!confirm('現在の入力をクリアして新しい申請を作りますか？'))return;loadData({applyDate:todayISO()});saveDraft()}
+function makePDF(){const d=collect();$('pApplyDate').textContent=formatReiwa(d.applyDate);$('pDepartment').textContent=d.department;$('pName').textContent=d.name;$('pStartDate').textContent=formatReiwa(d.startDate);$('pEndDate').textContent=formatReiwa(d.endDate);$('pDays').textContent=d.days||'';$('pReason').textContent=d.reason;$('pNote').textContent=d.note;saveDraft();setTimeout(()=>window.print(),100)}
+['applyDate','department','name','startDate','endDate','reason','note'].forEach(id=>{$(id).addEventListener('input',scheduleSave);$(id).addEventListener('change',scheduleSave)});
+$('startDate').addEventListener('input',syncDays);$('endDate').addEventListener('input',syncDays);$('startDate').addEventListener('change',syncDays);$('endDate').addEventListener('change',syncDays);
+(function init(){let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(e){}if(d)loadData(d);else loadData({applyDate:todayISO()})})();
+</script>
+</body>
+</html>
